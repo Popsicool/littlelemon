@@ -2,31 +2,35 @@ from django.shortcuts import render
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from .models import Menu, Cart, Order, OrderItem
+from .models import Menu, Cart, Order, Category
 from rest_framework import status, generics
 from django.shortcuts import get_object_or_404
-from .serializers import MenuItemsSerializers, UserSerializers, CartSerializers, OrderSerializers, OrderItemsSerializers
+from .serializers import MenuSerializers,CategorySerializers, UserSerializers, CartSerializers
+from . import serializers
 from .permissions import IsManager
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
 from django.core.paginator import Paginator, EmptyPage
 from datetime import date
 from rest_framework.throttling import UserRateThrottle
+from django.contrib.auth import get_user_model
+
+# Create your models here.
+User = get_user_model()
 # Create your views here.
 
 
 class MenuListView(generics.GenericAPIView):
 
-    serializer_class = serializers.MenuItemsSerializers
+    serializer_class = serializers.MenuSerializers
     queryset = Order.objects.all()
     permission_classes = [IsAuthenticated]
-
-    category = request.query_params.get('category')
-    price = request.query_params.get('to_price')
-    search = request.query_params.get('search')
-    ordering = request.query_params.get('ordering')
-    perpage = request.query_params.get('perpage', default=3)
-    page = request.query_params.get('page', default=1)
     def get(self, request):
+        category = request.query_params.get('category')
+        price = request.query_params.get('to_price')
+        search = request.query_params.get('search')
+        ordering = request.query_params.get('ordering')
+        perpage = request.query_params.get('perpage', default=3)
+        page = request.query_params.get('page', default=1)
         menus = Menu.objects.all()
         if category:
             menus = menus.filter(category__title=category_name)
@@ -75,6 +79,17 @@ class MenuSingleView(generics.GenericAPIView):
             serializer.save()
             return Response(data = serializer.data, status=status.HTTP_200_OK)
         return Response(data= serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    def patch(self, request, pk):
+        if not request.user.is_staff:
+            data = {'message': '403 - Unauthorized, Access Denied'}
+            return Response(data = data, status=status.HTTP_403_FORBIDDEN)
+        data = request.data
+        menu = get_object_or_404(Menu, pk = pk)
+        serializer = self.serializer_class(data=data, instance=menu, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data = serializer.data, status=status.HTTP_200_OK)
+        return Response(data= serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def delete(self, request, pk):
         if not request.user.groups.filter(name='Manager').exists():
@@ -86,36 +101,59 @@ class MenuSingleView(generics.GenericAPIView):
 
 class CategoryListView(generics.GenericAPIView):
     serializer_class = serializers.CategorySerializers
-    queryset = Category.objects.all()
-    permission_classes = [IsAuthenticated]
-
+    permission_classes = [IsAdminUser]
     def get(self, request):
+        queryset = Category.objects.all()
         serializer = self.serializer_class(queryset, many=True)
         return Response(data = serializer.data, status = status.HTTP_200_OK)
+    def post(self, request):
+        if not request.user.groups.filter(name='Manager').exists():
+            data = {'message': '403 - Unauthorized, Access Denied'}
+            return Response(data = data, status=status.HTTP_403_FORBIDDEN)
+        serializer = self.serializer_class(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data = serializer.data, status=status.HTTP_200_OK)
+        return Response(data= serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CategorySingleView(generics.GenericAPIView):
     serializer_class = serializers.CategorySerializers
-    queryset = Category.objects.all()
-    permission_classes = [IsAuthenticated, IsManager]
-    def  post(self, request, pk):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, pk):
+        category = get_object_or_404(Category, pk = pk)
+        serializer = self.serializer_class(category)
+        return Response(data = serializer.data, status = status.HTTP_200_OK)
+    def patch(self, request, pk):
+        if not request.user.groups.filter(name='Manager').exists():
+            data = {'message': '403 - Unauthorized, Access Denied'}
+            return Response(data = data, status=status.HTTP_403_FORBIDDEN)
         data = request.data
-        serializer = self.serializer_class(data=data)
+        category = get_object_or_404(Category, pk = pk)
+        serializer = self.serializer_class(data=data,instance=category, partial=True)
         if serializer.is_valid():
             serializer.save()
             return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+    def delete(self, request, pk):
+        if not request.user.groups.filter(name='Manager').exists():
+            data = {'message': '403 - Unauthorized, Access Denied'}
+            return Response(data = data, status=status.HTTP_403_FORBIDDEN)
+        category = get_object_or_404(Category, pk = pk)
+        category.delete()
+        return Response(status= status.HTTP_204_NO_CONTENT)
 
 
 class ManagerListView(generics.GenericAPIView):
-    serializer_class = serializers.MenuItemsSerializers
-    queryset = Order.objects.all()
+    serializer_class = serializers.MenuSerializers
     permission_classes = [IsAuthenticated, IsManager]
 
     def get(self, request):
+        queryset = Order.objects.all()
         managers = User.objects.filter(groups__name="Manager").all()
         serialized = UserSerializers(managers, many=True)
         return Response(serialized.data)
     def post(self, request):
+        queryset = Order.objects.all()
         user = request.data["username"]
         user = get_object_or_404(User, username = user)
         manager = Group.objects.get(name="Manager")
@@ -124,35 +162,13 @@ class ManagerListView(generics.GenericAPIView):
         return Response(data = data, status=status.HTTP_201_CREATED)
 
 
-class GroupListCreate(generic.GenericAPIView):
+class GroupListCreate(generics.GenericAPIView):
     serializer_class = serializers.GroupSerializers
-    queryset = Group.objects.all()
-    permission_classes = [IsAuthenticated]
+    permission_classes = [IsAdminUser]
     def get(self, request):
+        queryset = Group.objects.all()
         serializer = self.serializer_class(queryset, many=True)
         return Response(data = serializer.data, status = status.HTTP_200_OK)
-
-
-class GroupListCreate(generic.GenericAPIView):
-    serializer_class = serializers.GroupSerializers
-    permission_classes = [IsAuthenticated, IsManager]
-    def  post(self, request, pk):
-        data = request.data
-        serializer = self.serializer_class(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
-
-    # def post(self, request):
-    #     data = request.data
-    #     new_group = Group.objects.get_or_create(name ='new_group')
-
-
-class CartMenu(generic.GenericAPIView):
-    serializer_class = serializers.CartSerializers
-    permission_classes = [IsAuthenticated]
-    def get(self, request):
-        pass
     def  post(self, request):
         data = request.data
         serializer = self.serializer_class(data=data)
@@ -161,3 +177,31 @@ class CartMenu(generic.GenericAPIView):
             return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 
+# class GroupListCreate(generics.GenericAPIView):
+#     serializer_class = serializers.GroupSerializers
+#     permission_classes = [IsAuthenticated, IsManager]
+    
+
+    # def post(self, request):
+    #     data = request.data
+    #     new_group = Group.objects.get_or_create(name ='new_group')
+
+
+class CartMenu(generics.GenericAPIView):
+    serializer_class = serializers.CartSerializers
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        user_cart = get_object_or_404(Cart, user = request.user)
+        serialized = self.serializer_class(user_cart, many=True)
+        return Response(serialized.data)
+    def post(self, request):
+        data = request.data
+        serializer = self.serializer_class(data=data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+
+
+class OrderListView(generics.GenericAPIView):
+    serializer_class = serializers.CartSerializers
+    permission_classes = [IsAuthenticated]

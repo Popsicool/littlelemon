@@ -1,8 +1,12 @@
 from django.db import models
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
+
+# Create your models here.
+User = get_user_model()
 
 
-new_group, created = Group.objects.get_or_create(name ='new_group')
+# new_group, created = Group.objects.get_or_create(name ='new_group')
 
 class Category(models.Model):
     title = models.CharField(max_length=250)

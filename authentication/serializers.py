@@ -5,21 +5,21 @@ from phonenumber_field.serializerfields import PhoneNumberField
 class UserCreationSerializer(serializers.ModelSerializer):
     username = serializers.CharField(max_length = 25)
     email = serializers.EmailField(max_length= 80)
-    phone_number = PhoneNumberField(allow_null = False, allow_blank=False)
+    phone_num = PhoneNumberField(allow_null = False, allow_blank=False)
     password = serializers.CharField(min_length = 8, write_only=True)
 
     class Meta:
         model = User
-        fields = ["username", "email", "phone_number", "password"]
+        fields = ["username", "email", "phone_num", "password"]
     
     def validate(self, attrs):
-        username_exists = User.objects.filter(username=attrs['username']).exists()
+        username_exists = User.objects.filter(email=attrs['username']).exists()
         if username_exists:
-            raise serializers.ValidationError(detail = "User with username already exists")
-        email_exists = User.objects.filter(username=attrs['email']).exists()
+            raise serializers.ValidationError(detail = "User with Username already exists")
+        email_exists = User.objects.filter(email=attrs['email']).exists()
         if email_exists:
             raise serializers.ValidationError(detail = "User with email already exists")
-        phone_number_exists = User.objects.filter(username=attrs['phone_number']).exists()
+        phone_number_exists = User.objects.filter(email=attrs['phone_num']).exists()
         if phone_number_exists:
             raise serializers.ValidationError(detail = "User with phone number already exists")
     
@@ -27,9 +27,9 @@ class UserCreationSerializer(serializers.ModelSerializer):
 
     def create(self, validated_data):
         user = User.objects.create(
-            username = validated_data['username'],
             email = validated_data['email'],
-            phone_number = validated_data['phone_number']
+            username = validated_data['username'],
+            phone_num = validated_data['phone_num']
         )
         user.set_password(validated_data['password'])
         user.save()

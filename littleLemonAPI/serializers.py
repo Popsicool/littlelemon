@@ -1,12 +1,13 @@
 from rest_framework import serializers
 from .models import Menu, Category, Cart, Order
-from django.contrib.auth.models import User, Group
+from django.contrib.auth.models import Group
+from django.contrib.auth import get_user_model
 
-
-
+# Create your models here.
+User = get_user_model()
 
 class MenuSerializers(serializers.ModelSerializer):
-    category = CategorySerializers(read_only=True)
+    # category = CategorySerializers(read_only=True)
     # category_id = serializers.IntegerField(write_only=True)
 
     class Meta:
@@ -33,7 +34,7 @@ class UserSerializers(serializers.ModelSerializer):
 
 class CartSerializers(serializers.ModelSerializer):
     price = serializers.SerializerMethodField(method_name="totalprice")
-    menuitem = MenuItemsSerializers(read_only=True)
+    menuitem = MenuSerializers(read_only=True)
     menuitem_id = serializers.IntegerField(write_only=True)
 
     class Meta:
@@ -44,30 +45,7 @@ class CartSerializers(serializers.ModelSerializer):
     def totalprice(self, model: Cart):
         return model.price * model.quantity
 
-
-class OrderSerializers(serializers.ModelSerializer):
-    user = serializers.SerializerMethodField(method_name="username")
-    delivery_crew = UserSerializers(read_only=True)
-    delivery_crew_id = serializers.IntegerField(write_only=True)
-
+class GroupSerializers(serializers.ModelSerializer):
     class Meta:
-        model = Order
-        fields = ['id', 'user', 'delivery_crew',
-                  'status', 'total', 'date', 'delivery_crew_id']
-
-    def username(self, model: User):
-        return model.user.username
-
-
-class OrderItemsSerializers(serializers.ModelSerializer):
-    order = serializers.SerializerMethodField(method_name="username")
-    menuitem = MenuItemsSerializers(read_only=True)
-    menuitem_id = serializers.IntegerField(write_only=True)
-
-    class Meta:
-        model = OrderItem
-        fields = ['order', 'menuitem', 'quantity',
-                  'unit_price', 'price', 'menuitem_id']
-
-    def username(self, model: User):
-        return model.order.username
+        model = Group
+        fields = ["name"]
