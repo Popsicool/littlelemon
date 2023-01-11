@@ -101,7 +101,7 @@ class MenuSingleView(generics.GenericAPIView):
 
 class CategoryListView(generics.GenericAPIView):
     serializer_class = serializers.CategorySerializers
-    permission_classes = [IsAdminUser]
+    permission_classes = [IsAuthenticated]
     def get(self, request):
         queryset = Category.objects.all()
         serializer = self.serializer_class(queryset, many=True)
@@ -166,10 +166,22 @@ class GroupListCreate(generics.GenericAPIView):
     serializer_class = serializers.GroupSerializers
     permission_classes = [IsAdminUser]
     def get(self, request):
+        group_name = request.GET.get('group_name')
+        username = request.GET.get('username')
+        activity = request.GET.get('activity')
+        if group_name and username:
+            group = get_object_or_404(Group, name=group_name)
+            user = get_object_or_404(User, username=username)
+            if activity == "add":
+                user.groups.add(group)
+                return Response(data = {"message": "User {} added to group {}".format(username, group_name)}, status = status.HTTP_200_OK)
+            elif activity == "remove":
+                user.groups.remove(group)
+                return Response(data = {"message": "User {} removed from group {}".format(username, group_name)}, status = status.HTTP_200_OK)
         queryset = Group.objects.all()
         serializer = self.serializer_class(queryset, many=True)
         return Response(data = serializer.data, status = status.HTTP_200_OK)
-    def  post(self, request):
+    def post(self, request):
         data = request.data
         serializer = self.serializer_class(data=data)
         if serializer.is_valid():
@@ -177,14 +189,31 @@ class GroupListCreate(generics.GenericAPIView):
             return Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 
-# class GroupListCreate(generics.GenericAPIView):
-#     serializer_class = serializers.GroupSerializers
-#     permission_classes = [IsAuthenticated, IsManager]
+class GroupSingle(generics.GenericAPIView):
+    serializer_class = serializers.GroupSerializers
+    permission_classes = [IsAuthenticated, IsManager]
+    def get(self, request, pk):
+        group = get_object_or_404(Group, pk = pk)
+        serializer = self.serializer_class(group)
+        return Response(data = serializer.data, status = status.HTTP_200_OK)
     
-
-    # def post(self, request):
-    #     data = request.data
-    #     new_group = Group.objects.get_or_create(name ='new_group')
+    def patch(self, request, pk):
+        if not request.user.groups.filter(name='Manager').exists():
+            data = {'message': '403 - Unauthorized, Access Denied'}
+            return Response(data = data, status=status.HTTP_403_FORBIDDEN)
+        data = request.data
+        group = get_object_or_404(Group, pk = pk)
+        serializer = self.serializer_class(data=data,instance=group, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(data=serializer.data, status=status.HTTP_201_CREATED)
+    def delete(self, request, pk):
+        if not request.user.groups.filter(name='Manager').exists():
+            data = {'message': '403 - Unauthorized, Access Denied'}
+            return Response(data = data, status=status.HTTP_403_FORBIDDEN)
+        group = get_object_or_404(Group, pk = pk)
+        group.delete()
+        return Response(status= status.HTTP_204_NO_CONTENT)
 
 
 class CartMenu(generics.GenericAPIView):

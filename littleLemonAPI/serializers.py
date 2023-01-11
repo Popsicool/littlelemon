@@ -12,13 +12,13 @@ class MenuSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Menu
-        fields = ["id", 'title', 'price',
+        fields = ['title', 'price',
                   'featured', 'category']
 
 class CategorySerializers(serializers.ModelSerializer):
     class Meta:
         model = Category
-        fields = ['id', 'title']
+        fields = ['title']
 
 
 class UserSerializers(serializers.ModelSerializer):

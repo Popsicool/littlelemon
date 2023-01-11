@@ -10,7 +10,8 @@ urlpatterns = [
     path('categories/<int:pk>', views.CategorySingleView.as_view(), name= "categories"),
     path('cart/menu-items', views.CartMenu.as_view(), name="cart-menu"),
     path('order', views.OrderListView.as_view(), name= "order"),
-    path('groups', views.GroupListCreate.as_view(), name='groups')
+    path('groups', views.GroupListCreate.as_view(), name='groups'),
+    path('groups/<int:pk>', views.GroupSingle.as_view(), name='groups')
 
     # path('groups/manager/users/<int:pk>', views.delManager),
 
