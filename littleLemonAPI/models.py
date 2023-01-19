@@ -10,6 +10,8 @@ User = get_user_model()
 
 class Category(models.Model):
     title = models.CharField(max_length=250)
+    def __str__(self):
+        return self.title
 
 
 class Menu(models.Model):
@@ -18,25 +20,28 @@ class Menu(models.Model):
     featured = models.BooleanField(default= False)
     category = models.ForeignKey(Category, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return self.title
+
 
 class Cart(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    menuitem = models.ForeignKey(Menu, on_delete=models.CASCADE)
-    quantity = models.SmallIntegerField(default=1)
-    unit_price = models.DecimalField(max_digits=6, decimal_places=2, default=0)
-    # price = models.DecimalField(max_digits=6, decimal_places=2)
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    items = models.JSONField(null=True)
+    price = models.DecimalField(max_digits=6, decimal_places=2, default= 0.0)
 
     def __str__(self):
-        return f"<Cart {self.id} owned by {self.user.id}>"
+        return f"<Cart {self.id} owned by {self.user.username}>"
 
 
 class Order(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
-    delivery_crew = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, related_name="delivery_crew")
+    items = models.JSONField(null=True)
+    price = models.DecimalField(max_digits=6, decimal_places=2)
     delivered = models.BooleanField(default = False)
     created_at = models.DateTimeField(auto_now_add = True)
     updated_at = models.DateTimeField(auto_now = True)
+    def __str__(self):
+        return f"<Cart {self.id} owned by {self.user.username}>"
 
 
 # class OrderItem(models.Model):
