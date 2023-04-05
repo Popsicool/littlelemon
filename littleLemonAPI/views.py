@@ -197,7 +197,7 @@ class GroupSingle(generics.GenericAPIView):
         group = get_object_or_404(Group, pk = pk)
         serializer = self.serializer_class(group)
         return Response(data = serializer.data, status = status.HTTP_200_OK)
-    
+
     def patch(self, request, pk):
         if not request.user.groups.filter(name='Manager').exists():
             data = {'message': '403 - Unauthorized, Access Denied'}
