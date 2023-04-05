@@ -89,6 +89,7 @@ pip install -r requirements.txt
 - [Django](https://www.djangoproject.com/) Django is a high-level Python web framework that encourages rapid development and clean, pragmatic design. Built by experienced developers, it takes care of much of the hassle of web development, so you can focus on writing your app without needing to reinvent the wheel. It’s free and open source.
 
 ### Set up the Database
+Please configure the database settings before running the migration, change the database settings by commenting out line 132 - 134 in settings.py file and uncomment line 115 - 120 in order to change to default db.sqlite3 that comes with django. then run the following commands
 
 ```bash
 python manage.py makemigrations
