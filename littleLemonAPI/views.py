@@ -120,6 +120,7 @@ class CategoryListView(generics.GenericAPIView):
 
 class CategorySingleView(generics.GenericAPIView):
     serializer_class = serializers.CategorySerializers
+    queryset = Category.objects.all()
     permission_classes = [IsAuthenticated]
     def get(self, request, pk):
         category = get_object_or_404(Category, pk = pk)
@@ -193,6 +194,7 @@ class GroupListCreate(generics.GenericAPIView):
 class GroupSingle(generics.GenericAPIView):
     serializer_class = serializers.GroupSerializers
     permission_classes = [IsAuthenticated, IsManager]
+    queryset = Group.objects.all()
     def get(self, request, pk):
         group = get_object_or_404(Group, pk = pk)
         serializer = self.serializer_class(group)
